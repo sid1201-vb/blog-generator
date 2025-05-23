@@ -44,7 +44,6 @@ def generate_blog(
     competitors_urls = [url.strip() for url in competitors_urls_text.split("\n") if url.strip()]
     blog_id = str(uuid.uuid4().int)[:6]
     
-    
     # Progress tracking
     progress(0, "Getting topic list...")
     topic_list = get_underserved_blog_topics(topic)
@@ -58,11 +57,12 @@ def generate_blog(
     progress(0.3, "Finding relevant URLs...")
     url_list = get_url_list(search_phrases=search_list)
     url_list += competitors_urls
+    
     progress(0.4, "Saving and processing web content...")
     save_webpages(url_list, blog_id)
     
     progress(0.5, "Creating embeddings...")
-    chroma = get_chroma_hybrid_search(blog_id,blog_id+"hyb")
+    chroma = get_chroma_hybrid_search(blog_id, blog_id + "hyb")
     chroma.clear_collection()
     mkdwn_paths = get_markdown_files(blog_id)
     for path in mkdwn_paths:
@@ -94,16 +94,18 @@ def generate_blog(
     # Save the blog to a file
     filename = f"{topic.replace(' ','-')}.md"
     os.makedirs("generated-blogs", exist_ok=True)
-    with open("generated-blogs/"+filename, "w", encoding="utf-8") as f:
+    full_path = os.path.join("generated-blogs", filename)
+    with open(full_path, "w", encoding="utf-8") as f:
         f.write(final_draft)
         
     progress(1, "Blog generation complete!")
+
+    # Clean up intermediate files but not the final blog file
     chroma.clear_collection()
     delete_folder(blog_id)
-    delete_file(blog_id+"hyb")
+    delete_file(blog_id + "hyb")
     
-    # Return the final blog text and the filename for download
-    return final_draft, filename
+    return final_draft, full_path
 
 # Define the Gradio interface
 with gr.Blocks(title="AI Blog Generator") as app:
